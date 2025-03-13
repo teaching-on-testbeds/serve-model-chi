@@ -199,12 +199,6 @@ print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 ::: {.cell .markdown}
 
-When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
-
-:::
-
-::: {.cell .markdown}
-
 #### Summary of results
 
 :::
@@ -242,7 +236,7 @@ model.compile()
 
 just below the call to `torch.load`. Then, run the notebook again ("Run > Run All Cells"). 
 
-When you are done, download the fully executed notebook from the Jupyter container environment for later reference.
+When you are done, download the fully executed notebook **again** from the Jupyter container environment for later reference.
 
 
 :::
