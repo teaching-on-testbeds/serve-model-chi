@@ -183,7 +183,7 @@ Now, we can use `python-chi` to execute commands on the instance, to set it up. 
 
 ```python
 # runs in Chameleon Jupyter environment
-s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
+s.execute("git clone --branch mi100 --single-branch https://github.com/teaching-on-testbeds/serve-model-chi")
 ```
 
 
