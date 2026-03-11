@@ -20,7 +20,6 @@ import os
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from torchinfo import summary
 import time
 import numpy as np
 ```
@@ -29,7 +28,7 @@ import numpy as np
 
 ::: {.cell .markdown}
 
-First, let's load our saved model in evaluation mode, and print a summary of it. Note that for now, we will use the CPU for inference, not GPU.
+First, let's load our saved model in evaluation mode. Note that for now, we will use the CPU for inference, not GPU.
 
 :::
 
@@ -40,7 +39,6 @@ model_path = "models/food11.pth"
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
 model.eval()  
-summary(model)
 ```
 :::
 

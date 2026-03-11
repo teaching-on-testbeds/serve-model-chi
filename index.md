@@ -360,14 +360,13 @@ import os
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from torchinfo import summary
 import time
 import numpy as np
 ```
 
 
 
-First, let's load our saved model in evaluation mode, and print a summary of it. Note that for now, we will use the CPU for inference, not GPU.
+First, let's load our saved model in evaluation mode. Note that for now, we will use the CPU for inference, not GPU.
 
 
 ```python
@@ -376,7 +375,6 @@ model_path = "models/food11.pth"
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
 model.eval()  
-summary(model)
 ```
 
 
@@ -1666,11 +1664,17 @@ Before we can use CUDA and TensorRT execution providers, we need to switch from 
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
-Go back to your SSH session on "node-serve-model", stop the current Jupyter server, and launch a new one with the GPU image:
+Go back to your SSH session on "node-serve-model", and stop the current Jupyter server with:
 
 ```bash
 # runs on node-serve-model
 docker stop jupyter
+```
+
+and launch a new one with the GPU image:
+
+```bash
+# runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
     --gpus all \
     --shm-size 16G \

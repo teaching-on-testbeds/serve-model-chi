@@ -152,11 +152,17 @@ Before we can use CUDA and TensorRT execution providers, we need to switch from 
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
-Go back to your SSH session on "node-serve-model", stop the current Jupyter server, and launch a new one with the GPU image:
+Go back to your SSH session on "node-serve-model", and stop the current Jupyter server with:
 
 ```bash
 # runs on node-serve-model
 docker stop jupyter
+```
+
+and launch a new one with the GPU image:
+
+```bash
+# runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
     --gpus all \
     --shm-size 16G \
