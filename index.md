@@ -62,7 +62,7 @@ Then,
 * Then, on the left side, click on "Reservations" > "Leases", and then click on "Create Lease":
   * set the "Name" to `serve_model_netID` where in place of `netID` you substitute your actual net ID.
   * set the start date and time in UTC. To make scheduling smoother, please start your lease on an hour boundary, e.g. `XX:00`.
-  * modify the lease length (in days) until the end date is correct. Then, set the end time. To be mindful of other users, you should limit your lease time to three hours as directed. Also, to avoid a potential race condition that occurs when one lease starts immediately after another lease ends, you should end your lease five minutes before the end of an hour, e.g. at `YY:55`.
+  * modify the lease length (in days) until the end date is correct. Then, set the end time. To be mindful of other users, you should limit your lease time to three hours as directed. Also, to avoid a potential race condition that occurs when one lease starts immediately after another lease ends, you should end your lease ten minutes before the end of an hour, e.g. at `YY:50`.
   * Click "Next".
 * On the "Hosts" tab,
   * check the "Reserve hosts" box
