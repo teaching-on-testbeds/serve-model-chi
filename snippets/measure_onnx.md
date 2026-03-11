@@ -19,6 +19,7 @@ You will execute this notebook *in a Jupyter container running on a compute inst
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -32,6 +33,7 @@ from torch.utils.data import DataLoader
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -55,6 +57,7 @@ First, let's load our saved PyTorch model, and convert it to ONNX using PyTorch'
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 model_path = "models/food11.pth"  
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
@@ -78,7 +81,9 @@ onnx.checker.check_model(onnx_model)
 
 ## Create an inference session
 
-Now, we can evaluate our model! To use an ONNX model, we create an *inference session*, and then use the model within that session. Let's start an inference session:
+Now, we can evaluate our model! To use an ONNX model, we create an *inference session*, and then use the model within that session.
+
+For this first ONNX baseline, we will explicitly disable graph optimizations, so that later we can clearly see the effect when we enable them. Let's start an inference session:
 
 
 :::
@@ -87,13 +92,22 @@ Now, we can evaluate our model! To use an ONNX model, we create an *inference se
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ```
 :::
 
 ::: {.cell .code}
 ```python
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
+# runs in jupyter container on node-serve-model
+session_options = ort.SessionOptions()
+session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+
+ort_session = ort.InferenceSession(
+    onnx_model_path,
+    sess_options=session_options,
+    providers=['CPUExecutionProvider']
+)
 ```
 :::
 
@@ -108,6 +122,7 @@ and let's double check the execution provider that will be used in this session:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 ort_session.get_providers()
 ```
 :::
@@ -126,6 +141,7 @@ First, let's measure accuracy on the test set:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 correct = 0
 total = 0
 for images, labels in test_loader:
@@ -140,6 +156,7 @@ accuracy = (correct / total) * 100
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 ```
 :::
@@ -154,6 +171,7 @@ We are also concerned with the size of the ONNX model on disk. It will be simila
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 ```
@@ -172,6 +190,7 @@ Now, we'll measure how long it takes the model to return a prediction for a sing
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 num_trials = 100  # Number of trials
 
 # Get a single sample from the test data
@@ -194,6 +213,7 @@ for _ in range(num_trials):
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
@@ -211,6 +231,7 @@ Finally, we'll measure the rate at which the model can return predictions for ba
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 num_batches = 50  # Number of trials
 
 # Get a batch from the test data
@@ -230,6 +251,7 @@ for _ in range(num_batches):
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
@@ -245,6 +267,7 @@ print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
@@ -341,4 +364,3 @@ When you are done, download the fully executed notebook from the Jupyter contain
 Also download the `food11.onnx` model from inside the `models` directory.
 
 :::
-

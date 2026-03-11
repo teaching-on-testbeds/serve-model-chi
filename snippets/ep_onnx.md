@@ -12,6 +12,7 @@ Once a model is in ONNX format, we can use it with many *execution providers*. I
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -25,6 +26,7 @@ from torch.utils.data import DataLoader
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -41,6 +43,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 def benchmark_session(ort_session):
 
     print(f"Execution provider: {ort_session.get_providers()}")
@@ -122,6 +125,7 @@ First, for reference, we'll repeat our performance test for the (unquantized mod
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -144,6 +148,45 @@ Batch Throughput: 1042.47 FPS
 #### CUDA execution provider
 
 
+Before we can use CUDA and TensorRT execution providers, we need to switch from the `jupyter-onnx-base` image to the `jupyter-onnx-gpu` image.
+
+Close this Jupyter server tab - you will reopen it shortly, with a new token.
+
+Go back to your SSH session on "node-serve-model", stop the current Jupyter server, and launch a new one with the GPU image:
+
+```bash
+# runs on node-serve-model
+docker stop jupyter
+docker run  -d --rm  -p 8888:8888 \
+    --gpus all \
+    --shm-size 16G \
+    -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
+    -v food11:/mnt/ \
+    -e FOOD11_DATA_DIR=/mnt/Food-11 \
+    --name jupyter \
+    jupyter-onnx-gpu
+```
+
+Then get a new token:
+
+```bash
+# runs on node-serve-model
+docker exec jupyter jupyter server list
+```
+
+and look for a line like
+
+```
+http://localhost:8888/?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Paste this into a browser tab, but in place of `localhost`, substitute the floating IP assigned to your instance, to open the Jupyter notebook interface that is running *on your compute instance*.
+
+Then, in the file browser on the left side, open the "work" directory and then click on the `8_ep_onnx.ipynb` notebook to continue.
+
+Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then continue with CUDA and TensorRT:
+
+
 Next, we'll try it with the CUDA execution provider, which will execute the model on the GPU:
 
 :::
@@ -153,6 +196,7 @@ Next, we'll try it with the CUDA execution provider, which will execute the mode
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
 benchmark_session(ort_session)
@@ -184,6 +228,7 @@ The TensorRT execution provider will optimize the model for inference on NVIDIA 
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['TensorrtExecutionProvider'])
 benchmark_session(ort_session)
@@ -212,24 +257,17 @@ Even just on CPU, we can still use an optimized execution provider to improve in
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
-Go back to your SSH session on "node-serve-model", and build a container image for a Jupyter server with ONNX and OpenVINO:
+Go back to your SSH session on "node-serve-model", and stop the current Jupyter server:
 
 ```bash
-# run on node-serve-model 
-docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-cpu .
-```
-
-Stop the current Jupyter server:
-
-```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker stop jupyter
 ```
 
-Then, launch a container with the new image you just built:
+Then, launch a container with the OpenVINO image:
 
 ```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
     --shm-size 16G \
     -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
@@ -239,22 +277,24 @@ docker run  -d --rm  -p 8888:8888 \
     jupyter-onnx-openvino
 ```
 
-To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access). We'll get this token by running `jupyter server list` inside the `jupyter` container:
+To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access).
+
+Run
 
 ```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker exec jupyter jupyter server list
 ```
 
-Look for a line like
+and look for a line like
 
 ```
-http://localhost:8888/lab?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+http://localhost:8888/?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 Paste this into a browser tab, but in place of `localhost`, substitute the floating IP assigned to your instance, to open the Jupyter notebook interface that is running *on your compute instance*.
 
-Then, in the file browser on the left side, open the "work" directory and then click on the `7_ep_onnx.ipynb` notebook to continue.
+Then, in the file browser on the left side, open the "work" directory and then click on the `8_ep_onnx.ipynb` notebook to continue.
 
 Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then, skip to the OpenVINO section and run:
 
@@ -262,6 +302,7 @@ Run the three cells at the top, which `import` libraries, set up the data loader
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['OpenVINOExecutionProvider'])
 benchmark_session(ort_session)

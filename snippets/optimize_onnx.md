@@ -26,6 +26,7 @@ Since we are going to evaluate several models, we'll define a benchmark function
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -39,6 +40,7 @@ from torch.utils.data import DataLoader
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -55,6 +57,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 def benchmark_session(ort_session):
 
     print(f"Execution provider: {ort_session.get_providers()}")
@@ -134,6 +137,7 @@ We will save the model after applying graph optimizations to `models/food11_opti
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 optimized_model_path = "models/food11_optimized.onnx"
 
@@ -165,6 +169,7 @@ Next, evaluate the optimized model. The graph optimizations may improve the infe
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_optimized.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -204,7 +209,7 @@ We will continue our quest to improve inference speed! The next optimization we 
 
 There are many frameworks that offer quantization - for our Food11 model, we could:
 
-* use [PyTorch quantization](https://pytorch.org/docs/stable/quantization.html#introduction-to-quantization)
+* use [PyTorch quantization](https://docs.pytorch.org/ao/stable/index.html)
 * use [ONNX quantization](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html)
 * use [Intel Neural Compressor](https://intel.github.io/neural-compressor/latest/index.html) (which supports PyTorch and ONNX models)
 * use [NNCF](https://github.com/openvinotoolkit/nncf) if we plan to use the OpenVINO execution provider
@@ -222,7 +227,7 @@ We will use Intel Neural Compressor, which in addition to supporting many ML fra
 
 Post-training quantization comes in two main types. In both types, FP32 values will be converted in INT8, using
 
-$$X_{\text{INT8}} = \text{round} ( \text{scale}  \times X_{\text{FP32}} + \text{zero\_point} )$$
+$$\texttt{val}\_\texttt{quant} = \texttt{round}\left(\frac{\texttt{val}\_\texttt{fp32}}{\texttt{scale}}\right) + \texttt{zero}\_\texttt{point}$$
 
 but they differ with respect to when and how the quantization parameters "scale" and "zero point" are computed:
 
@@ -244,6 +249,7 @@ We will start with dynamic quantization. No calibration dataset is required.
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import neural_compressor
 from neural_compressor import quantization
 ```
@@ -251,6 +257,7 @@ from neural_compressor import quantization
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -291,6 +298,7 @@ We are also concerned with the size of the quantized model on disk:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_dynamic.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -308,6 +316,7 @@ Next, evaluate the quantized model. Since we are saving weights in integer form,
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_dynamic.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -353,6 +362,7 @@ First, let's prepare the calibration dataset. This dataset will also be used to 
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import neural_compressor
 from neural_compressor import quantization
 from torchvision import datasets, transforms
@@ -362,6 +372,7 @@ from torchvision import datasets, transforms
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
     transforms.Resize(224),
@@ -386,6 +397,7 @@ Then, we'll configure the quantizer. We'll start with a more aggressive quantiza
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -439,6 +451,7 @@ Let's get the size of the quantized model on disk:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_aggressive.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -455,6 +468,7 @@ Next, evaluate the quantized model.
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_aggressive.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -507,6 +521,7 @@ This time, we will see that the quantizer tries a few different "recipes" - in m
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -561,6 +576,7 @@ Let's get the size of the quantized model on disk:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_conservative.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -581,6 +597,7 @@ However, these tradeoffs vary from one model to the next, and across implementat
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_conservative.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -635,4 +652,3 @@ When you are done, download the fully executed notebook from the Jupyter contain
 Also download the models from inside the `models` directory.
 
 :::
-

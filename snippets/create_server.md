@@ -15,6 +15,7 @@ Run the following cell, and make sure the correct project is selected. Also **ch
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 from chi import server, context, lease
 import os
 
@@ -32,6 +33,7 @@ Change the string in the following cell to reflect the name of *your* lease (**w
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 l = lease.get_lease(f"serve_model_netID") 
 l.show()
 ```
@@ -58,6 +60,7 @@ We will use the lease to bring up a server with the `CC-Ubuntu24.04-CUDA` disk i
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 username = os.getenv('USER') # all exp resources will have this prefix
 s = server.Server(
     f"node-serve-model-{username}", 
@@ -82,12 +85,14 @@ Then, we'll associate a floating IP with the instance, so that we can access it 
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.associate_floating_ip()
 ```
 :::
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.refresh()
 s.check_connectivity()
 ```
@@ -101,6 +106,7 @@ In the output below, make a note of the floating IP that has been assigned to yo
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.refresh()
 s.show(type="widget")
 ```
@@ -119,6 +125,7 @@ Now, we can use `python-chi` to execute commands on the instance, to set it up. 
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
 ```
 :::
@@ -128,12 +135,13 @@ s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
 
 ### Set up Docker
 
-To use common deep learning frameworks like Tensorflow or PyTorch, and ML training platforms like MLFlow and Ray, we can run containers that have all the prerequisite libraries necessary for these frameworks. Here, we will set up the container framework.
+To run the serving and inference experiments in this lab, we will use Docker containers that already include the required runtime libraries. In this step, we set up Docker on the server so we can launch those containers.
 
 :::
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("curl -sSL https://get.docker.com/ | sudo sh")
 s.execute("sudo groupadd -f docker; sudo usermod -aG docker $USER")
 ```
@@ -150,6 +158,7 @@ We will also install the NVIDIA container toolkit, with which we can access GPUs
 
 ::: {.cell .code}
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
@@ -160,6 +169,36 @@ s.execute("sudo nvidia-ctk runtime configure --runtime=docker")
 # for https://github.com/NVIDIA/nvidia-container-toolkit/issues/48
 s.execute("sudo jq 'if has(\"exec-opts\") then . else . + {\"exec-opts\": [\"native.cgroupdriver=cgroupfs\"]} end' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp > /dev/null && sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json")
 s.execute("sudo systemctl restart docker")
+```
+:::
+
+
+::: {.cell .markdown}
+
+### Build Jupyter images for the lab
+
+To save time later in the lab, we will start building all three Jupyter images now. We begin with a generic ONNX image (`jupyter-onnx-base`) that does not include GPU-specific runtime libraries or the OpenVINO execution provider, so it typically builds faster. We can use that image to get started right away.
+
+:::
+
+::: {.cell .code}
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .")
+```
+:::
+
+::: {.cell .code}
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-gpu .")
+```
+:::
+
+::: {.cell .code}
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .")
 ```
 :::
 
@@ -180,4 +219,3 @@ where
 * in place of `A.B.C.D`, use the floating IP address you just associated to your instance.
 
 :::
-

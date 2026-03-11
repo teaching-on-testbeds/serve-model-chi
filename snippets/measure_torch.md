@@ -15,6 +15,7 @@ You will execute this notebook *in a Jupyter container running on a compute inst
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -34,6 +35,7 @@ First, let's load our saved model in evaluation mode, and print a summary of it.
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 model_path = "models/food11.pth"  
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
@@ -50,6 +52,7 @@ and also prepare our test dataset:
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
     transforms.Resize(224),
@@ -84,6 +87,7 @@ We'll start with model size. Our default `food11.pth` is a finetuned MobileNetV2
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 model_size = os.path.getsize(model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 ```
@@ -99,6 +103,7 @@ Next, we'll measure the accuracy of this model on the test data
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 correct = 0
 total = 0
 with torch.no_grad():
@@ -114,6 +119,7 @@ accuracy = (correct / total) * 100
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 ```
 :::
@@ -130,6 +136,7 @@ Now, we'll measure how long it takes the model to return a prediction for a sing
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 num_trials = 100  # Number of trials
 
 # Get a single sample from the test data
@@ -154,6 +161,7 @@ with torch.no_grad():
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
@@ -171,6 +179,7 @@ Finally, we'll measure the rate at which the model can return predictions for ba
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 num_batches = 50  # Number of trials
 
 # Get a batch from the test data
@@ -191,6 +200,7 @@ with torch.no_grad():
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
@@ -205,6 +215,7 @@ print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 ::: {.cell .code}
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
@@ -214,34 +225,6 @@ print(f"Inference Throughput (single sample): {num_trials/np.sum(latencies):.2f}
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
 :::
-
-::: {.cell .markdown}
-
-When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
-
-:::
-
-
-::: {.cell .markdown}
-
-### Eager mode execution vs compiled model
-
-We had just evaluated a model in eager mode. However, in some (although, not all) cases we may get better performance from compiling the model into a graph, and executing it as a graph.
-
-Go back to the cell where the model is loaded, and add
-
-```python
-model.compile()
-```
-
-just below the call to `torch.load`. Then, run the notebook again ("Run > Run All Cells"). 
-
-When you are done, download the fully executed notebook **again** from the Jupyter container environment for later reference.
-
-
-:::
-
-
 
 <!-- 
 
@@ -324,3 +307,28 @@ Batch Throughput: 474.67 FPS
 
 -->
 
+::: {.cell .markdown}
+
+When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
+
+:::
+
+
+::: {.cell .markdown}
+
+### Eager mode execution vs compiled model
+
+We had just evaluated a model in eager mode. However, in some (although, not all) cases we may get better performance from compiling the model into a graph, and executing it as a graph.
+
+Go back to the cell where the model is loaded, and add
+
+```python
+model.compile()
+```
+
+just below the call to `torch.load`. Then, run the notebook again ("Run > Run All Cells"). 
+
+When you are done, download the fully executed notebook **again** from the Jupyter container environment for later reference.
+
+
+:::

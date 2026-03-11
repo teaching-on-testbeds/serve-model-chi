@@ -45,36 +45,34 @@ You can decide which type to use based on availability.
 
 ## Create a lease for a GPU server
 
-
-
 To use bare metal resources on Chameleon, we must reserve them in advance. For this experiment, we will reserve a 3-hour block on a bare metal node with GPU.
 
 We can use the OpenStack graphical user interface, Horizon, to submit a lease. To access this interface,
 
 * from the [Chameleon website](https://chameleoncloud.org/)
-* click "Experiment" > "CHI@TACC" or "Experiment > CHI@UC", depending on which site you want to make reservation at
+* click "Experiment" > "CHI@TACC" or "Experiment" > "CHI@UC", depending on which site you want to make reservation at
 * log in if prompted to do so
-* check the project drop-down menu near the top left (which shows e.g. “CHI-XXXXXX”), and make sure the correct project is selected.
+* check the project drop-down menu near the top left (which shows e.g. "CHI-XXXXXX"), and make sure the correct project is selected.
 
 
 
-Then, 
+Then,
 
-* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `compute_liqid` or `compute_gigaio` as applicable to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone. 
+* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `compute_liqid` or `compute_gigaio` as applicable to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone.
 * Once you have identified an available three-hour block in UTC time that works for you in your local time zone, make a note of:
   * the start and end time of the time you will try to reserve. (Note that if you mouse over an existing reservation, a pop up will show you the exact start and end time of that reservation.)
   * and the name of the node you want to reserve. (We will reserve nodes by name, not by type, to avoid getting a 1-GPU node when we wanted a 2-GPU node.)
 * Then, on the left side, click on "Reservations" > "Leases", and then click on "Create Lease":
-  * set the "Name" to <code>serve_model_<b>netID</b></code> where in place of <code><b>netID</b></code> you substitute your actual net ID.
+  * set the "Name" to `serve_model_netID` where in place of `netID` you substitute your actual net ID.
   * set the start date and time in UTC. To make scheduling smoother, please start your lease on an hour boundary, e.g. `XX:00`.
   * modify the lease length (in days) until the end date is correct. Then, set the end time. To be mindful of other users, you should limit your lease time to three hours as directed. Also, to avoid a potential race condition that occurs when one lease starts immediately after another lease ends, you should end your lease five minutes before the end of an hour, e.g. at `YY:55`.
   * Click "Next".
-* On the "Hosts" tab, 
+* On the "Hosts" tab,
   * check the "Reserve hosts" box
   * leave the "Minimum number of hosts" and "Maximum number of hosts" at 1
   * in "Resource properties", specify the node name that you identified earlier.
 * Click "Next". Then, click "Create". (We won't include any network resources in this lease.)
-  
+
 Your lease status should show as "Pending". Click on the lease to see an overview. It will show the start time and end time, and it will show the name of the physical host that is reserved for you as part of your lease. Make sure that the lease details are correct.
 
 
@@ -85,13 +83,12 @@ Since you will need the full lease time to actually execute your experiment, you
 
 ## At the beginning of your GPU server lease
 
-
-At the beginning of your GPU lease time, you will continue with the next step, in which you bring up and configure a bare metal instance! To begin this step, open this experiment on Trovi:
+At the beginning of your GPU lease time, you will continue with the next step, in which you bring up and configure a bare metal instance. To begin this step, open this experiment on Trovi:
 
 * Use this link: [Model optimizations for serving machine learning models](https://chameleoncloud.org/experiment/share/f5acccf8-f2cb-4d1e-8918-4c8fd97bfc32) on Trovi
-* Then, click “Launch on Chameleon”. This will start a new Jupyter server for you, with the experiment materials already in it, including the notebok to bring up the bare metal server.
+* Then, click "Launch on Chameleon". This will start a new Jupyter server for you, with the experiment materials already in it, including the notebook to bring up the bare metal server.
 
-
+Inside the `serve-model-chi` directory, continue with `2_create_server.ipynb`.
 
 
 
@@ -107,6 +104,7 @@ Run the following cell, and make sure the correct project is selected. Also **ch
 
 
 ```python
+# runs in Chameleon Jupyter environment
 from chi import server, context, lease
 import os
 
@@ -120,6 +118,7 @@ Change the string in the following cell to reflect the name of *your* lease (**w
 
 
 ```python
+# runs in Chameleon Jupyter environment
 l = lease.get_lease(f"serve_model_netID") 
 l.show()
 ```
@@ -140,6 +139,7 @@ We will use the lease to bring up a server with the `CC-Ubuntu24.04-CUDA` disk i
 
 
 ```python
+# runs in Chameleon Jupyter environment
 username = os.getenv('USER') # all exp resources will have this prefix
 s = server.Server(
     f"node-serve-model-{username}", 
@@ -158,10 +158,12 @@ Then, we'll associate a floating IP with the instance, so that we can access it 
 
 
 ```python
+# runs in Chameleon Jupyter environment
 s.associate_floating_ip()
 ```
 
 ```python
+# runs in Chameleon Jupyter environment
 s.refresh()
 s.check_connectivity()
 ```
@@ -171,6 +173,7 @@ In the output below, make a note of the floating IP that has been assigned to yo
 
 
 ```python
+# runs in Chameleon Jupyter environment
 s.refresh()
 s.show(type="widget")
 ```
@@ -185,6 +188,7 @@ Now, we can use `python-chi` to execute commands on the instance, to set it up. 
 
 
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
 ```
 
@@ -192,10 +196,11 @@ s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
 
 ### Set up Docker
 
-To use common deep learning frameworks like Tensorflow or PyTorch, and ML training platforms like MLFlow and Ray, we can run containers that have all the prerequisite libraries necessary for these frameworks. Here, we will set up the container framework.
+To run the serving and inference experiments in this lab, we will use Docker containers that already include the required runtime libraries. In this step, we set up Docker on the server so we can launch those containers.
 
 
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("curl -sSL https://get.docker.com/ | sudo sh")
 s.execute("sudo groupadd -f docker; sudo usermod -aG docker $USER")
 ```
@@ -208,6 +213,7 @@ We will also install the NVIDIA container toolkit, with which we can access GPUs
 
 
 ```python
+# runs in Chameleon Jupyter environment
 s.execute("curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
@@ -218,6 +224,28 @@ s.execute("sudo nvidia-ctk runtime configure --runtime=docker")
 # for https://github.com/NVIDIA/nvidia-container-toolkit/issues/48
 s.execute("sudo jq 'if has(\"exec-opts\") then . else . + {\"exec-opts\": [\"native.cgroupdriver=cgroupfs\"]} end' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp > /dev/null && sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json")
 s.execute("sudo systemctl restart docker")
+```
+
+
+
+### Build Jupyter images for the lab
+
+To save time later in the lab, we will start building all three Jupyter images now. We begin with a generic ONNX image (`jupyter-onnx-base`) that does not include GPU-specific runtime libraries or the OpenVINO execution provider, so it typically builds faster. We can use that image to get started right away.
+
+
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .")
+```
+
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-gpu .")
+```
+
+```python
+# runs in Chameleon Jupyter environment
+s.execute("docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .")
 ```
 
 
@@ -234,7 +262,6 @@ where
 
 * in place of `~/.ssh/id_rsa_chameleon`, substitute the path to your own key that you had uploaded to CHI@TACC
 * in place of `A.B.C.D`, use the floating IP address you just associated to your instance.
-
 
 
 
@@ -282,43 +309,37 @@ it should show "evaluation", "validation", and "training" subfolders.
 
 ## Launch a Jupyter container
 
-Inside the SSH session, build a container image for a Jupyter server with ONNX and related libraries for CPU inference installed:
+Inside the SSH session, launch a container from the `jupyter-onnx-base` image:
 
 ```bash
-# run on node-serve-model 
-docker build -t jupyter-onnx -f serve-model-chi/docker/Dockerfile.jupyter-onnx-gpu .
-```
-
-Then, launch the container:
-
-```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
-    --gpus all \
     --shm-size 16G \
     -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
     -v food11:/mnt/ \
     -e FOOD11_DATA_DIR=/mnt/Food-11 \
     --name jupyter \
-    jupyter-onnx
+    jupyter-onnx-base
 ```
 
-To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access). We'll get this token by running `jupyter server list` inside the `jupyter` container:
+To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access).
+
+Run
 
 ```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker exec jupyter jupyter server list
 ```
 
-Look for a line like
+and look for a line like
 
 ```
-http://localhost:8888/lab?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+http://localhost:8888/?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 Paste this into a browser tab, but in place of `localhost`, substitute the floating IP assigned to your instance, to open the Jupyter notebook interface that is running *on your compute instance*.
 
-Then, in the file browser on the left side, open the "work" directory and then click on the `4_measure_torch.ipynb` notebook to continue.
+Then, in the file browser on the left side, open the "work" directory and then click on the `5_measure_torch.ipynb` notebook to continue.
 
 
 
@@ -334,6 +355,7 @@ You will execute this notebook *in a Jupyter container running on a compute inst
 
 
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -349,6 +371,7 @@ First, let's load our saved model in evaluation mode, and print a summary of it.
 
 
 ```python
+# runs in jupyter container on node-serve-model
 model_path = "models/food11.pth"  
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
@@ -361,6 +384,7 @@ and also prepare our test dataset:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
     transforms.Resize(224),
@@ -389,6 +413,7 @@ We will measure:
 We'll start with model size. Our default `food11.pth` is a finetuned MobileNetV2, which is a small model designed for deployment on edge devices, so it is fairly small.
 
 ```python
+# runs in jupyter container on node-serve-model
 model_size = os.path.getsize(model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 ```
@@ -400,6 +425,7 @@ Next, we'll measure the accuracy of this model on the test data
 
 
 ```python
+# runs in jupyter container on node-serve-model
 correct = 0
 total = 0
 with torch.no_grad():
@@ -413,6 +439,7 @@ accuracy = (correct / total) * 100
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 ```
 
@@ -425,6 +452,7 @@ Now, we'll measure how long it takes the model to return a prediction for a sing
 
 
 ```python
+# runs in jupyter container on node-serve-model
 num_trials = 100  # Number of trials
 
 # Get a single sample from the test data
@@ -447,6 +475,7 @@ with torch.no_grad():
 
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
@@ -460,6 +489,7 @@ Finally, we'll measure the rate at which the model can return predictions for ba
 
 
 ```python
+# runs in jupyter container on node-serve-model
 num_batches = 50  # Number of trials
 
 # Get a batch from the test data
@@ -478,6 +508,7 @@ with torch.no_grad():
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
@@ -488,6 +519,7 @@ print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
@@ -496,30 +528,6 @@ print(f"Inference Latency (single sample, 99th percentile): {np.percentile(laten
 print(f"Inference Throughput (single sample): {num_trials/np.sum(latencies):.2f} FPS")
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
-
-
-When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
-
-
-
-
-### Eager mode execution vs compiled model
-
-We had just evaluated a model in eager mode. However, in some (although, not all) cases we may get better performance from compiling the model into a graph, and executing it as a graph.
-
-Go back to the cell where the model is loaded, and add
-
-```python
-model.compile()
-```
-
-just below the call to `torch.load`. Then, run the notebook again ("Run > Run All Cells"). 
-
-When you are done, download the fully executed notebook **again** from the Jupyter container environment for later reference.
-
-
-
-
 
 <!-- 
 
@@ -603,6 +611,27 @@ Batch Throughput: 474.67 FPS
 -->
 
 
+When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
+
+
+
+
+### Eager mode execution vs compiled model
+
+We had just evaluated a model in eager mode. However, in some (although, not all) cases we may get better performance from compiling the model into a graph, and executing it as a graph.
+
+Go back to the cell where the model is loaded, and add
+
+```python
+model.compile()
+```
+
+just below the call to `torch.load`. Then, run the notebook again ("Run > Run All Cells"). 
+
+When you are done, download the fully executed notebook **again** from the Jupyter container environment for later reference.
+
+
+
 
 
 ## Measure inference performance of ONNX model on CPU 
@@ -620,6 +649,7 @@ You will execute this notebook *in a Jupyter container running on a compute inst
 
 
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -631,6 +661,7 @@ from torch.utils.data import DataLoader
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -650,6 +681,7 @@ First, let's load our saved PyTorch model, and convert it to ONNX using PyTorch'
 
 
 ```python
+# runs in jupyter container on node-serve-model
 model_path = "models/food11.pth"  
 device = torch.device("cpu")
 model = torch.load(model_path, map_location=device, weights_only=False)
@@ -671,18 +703,29 @@ onnx.checker.check_model(onnx_model)
 
 ## Create an inference session
 
-Now, we can evaluate our model! To use an ONNX model, we create an *inference session*, and then use the model within that session. Let's start an inference session:
+Now, we can evaluate our model! To use an ONNX model, we create an *inference session*, and then use the model within that session.
+
+For this first ONNX baseline, we will explicitly disable graph optimizations, so that later we can clearly see the effect when we enable them. Let's start an inference session:
 
 
 
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ```
 
 ```python
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
+# runs in jupyter container on node-serve-model
+session_options = ort.SessionOptions()
+session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+
+ort_session = ort.InferenceSession(
+    onnx_model_path,
+    sess_options=session_options,
+    providers=['CPUExecutionProvider']
+)
 ```
 
 
@@ -693,6 +736,7 @@ and let's double check the execution provider that will be used in this session:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 ort_session.get_providers()
 ```
 
@@ -707,6 +751,7 @@ First, let's measure accuracy on the test set:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 correct = 0
 total = 0
 for images, labels in test_loader:
@@ -719,6 +764,7 @@ accuracy = (correct / total) * 100
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 ```
 
@@ -729,6 +775,7 @@ We are also concerned with the size of the ONNX model on disk. It will be simila
 
 
 ```python
+# runs in jupyter container on node-serve-model
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 ```
@@ -743,6 +790,7 @@ Now, we'll measure how long it takes the model to return a prediction for a sing
 
 
 ```python
+# runs in jupyter container on node-serve-model
 num_trials = 100  # Number of trials
 
 # Get a single sample from the test data
@@ -763,6 +811,7 @@ for _ in range(num_trials):
 
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
 print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
@@ -776,6 +825,7 @@ Finally, we'll measure the rate at which the model can return predictions for ba
 
 
 ```python
+# runs in jupyter container on node-serve-model
 num_batches = 50  # Number of trials
 
 # Get a batch from the test data
@@ -793,6 +843,7 @@ for _ in range(num_batches):
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
 print(f"Batch Throughput: {batch_fps:.2f} FPS")
 ```
@@ -804,6 +855,7 @@ print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 
 ```python
+# runs in jupyter container on node-serve-model
 print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
@@ -900,7 +952,6 @@ Also download the `food11.onnx` model from inside the `models` directory.
 
 
 
-
 ## Apply optimizations to ONNX model
 
 Now that we have an ONNX model, we can apply some basic optimizations. After completing this section, you should be able to apply:
@@ -921,6 +972,7 @@ Since we are going to evaluate several models, we'll define a benchmark function
 
 
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -932,6 +984,7 @@ from torch.utils.data import DataLoader
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -946,6 +999,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
 ```python
+# runs in jupyter container on node-serve-model
 def benchmark_session(ort_session):
 
     print(f"Execution provider: {ort_session.get_providers()}")
@@ -1021,6 +1075,7 @@ We will save the model after applying graph optimizations to `models/food11_opti
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 optimized_model_path = "models/food11_optimized.onnx"
 
@@ -1046,6 +1101,7 @@ Next, evaluate the optimized model. The graph optimizations may improve the infe
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_optimized.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -1083,7 +1139,7 @@ We will continue our quest to improve inference speed! The next optimization we 
 
 There are many frameworks that offer quantization - for our Food11 model, we could:
 
-* use [PyTorch quantization](https://pytorch.org/docs/stable/quantization.html#introduction-to-quantization)
+* use [PyTorch quantization](https://docs.pytorch.org/ao/stable/index.html)
 * use [ONNX quantization](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html)
 * use [Intel Neural Compressor](https://intel.github.io/neural-compressor/latest/index.html) (which supports PyTorch and ONNX models)
 * use [NNCF](https://github.com/openvinotoolkit/nncf) if we plan to use the OpenVINO execution provider
@@ -1099,7 +1155,7 @@ We will use Intel Neural Compressor, which in addition to supporting many ML fra
 
 Post-training quantization comes in two main types. In both types, FP32 values will be converted in INT8, using
 
-$$X_{\text{INT8}} = \text{round} ( \text{scale}  \times X_{\text{FP32}} + \text{zero\_point} )$$
+$$\texttt{val}\_\texttt{quant} = \texttt{round}\left(\frac{\texttt{val}\_\texttt{fp32}}{\texttt{scale}}\right) + \texttt{zero}\_\texttt{point}$$
 
 but they differ with respect to when and how the quantization parameters "scale" and "zero point" are computed:
 
@@ -1117,11 +1173,13 @@ We will start with dynamic quantization. No calibration dataset is required.
  
 
 ```python
+# runs in jupyter container on node-serve-model
 import neural_compressor
 from neural_compressor import quantization
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -1156,6 +1214,7 @@ We are also concerned with the size of the quantized model on disk:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_dynamic.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -1169,6 +1228,7 @@ Next, evaluate the quantized model. Since we are saving weights in integer form,
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_dynamic.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -1210,6 +1270,7 @@ First, let's prepare the calibration dataset. This dataset will also be used to 
 
 
 ```python
+# runs in jupyter container on node-serve-model
 import neural_compressor
 from neural_compressor import quantization
 from torchvision import datasets, transforms
@@ -1217,6 +1278,7 @@ from torchvision import datasets, transforms
 
 
 ```python
+# runs in jupyter container on node-serve-model
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
     transforms.Resize(224),
@@ -1237,6 +1299,7 @@ Then, we'll configure the quantizer. We'll start with a more aggressive quantiza
 
 
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -1284,6 +1347,7 @@ Let's get the size of the quantized model on disk:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_aggressive.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -1296,6 +1360,7 @@ Next, evaluate the quantized model.
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_aggressive.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -1344,6 +1409,7 @@ This time, we will see that the quantizer tries a few different "recipes" - in m
 
 
 ```python
+# runs in jupyter container on node-serve-model
 # Load ONNX model into Intel Neural Compressor
 model_path = "models/food11.onnx"
 fp32_model = neural_compressor.model.onnx_model.ONNXModel(model_path)
@@ -1392,6 +1458,7 @@ Let's get the size of the quantized model on disk:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_conservative.onnx"
 model_size = os.path.getsize(onnx_model_path) 
 print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
@@ -1408,6 +1475,7 @@ However, these tradeoffs vary from one model to the next, and across implementat
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11_quantized_conservative.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -1460,7 +1528,6 @@ Also download the models from inside the `models` directory.
 
 
 
-
 ### Try a different execution provider
 
 Once a model is in ONNX format, we can use it with many *execution providers*. In ONNX, an execution provider an interface that lets ONNX models run with special hardware-specific capabilities. Until now, we have been using the `CPUExecutionProvider`, but if we use hardware-specific capabilities, e.g. switch out generic implementations of graph operations for implementations that are optimized for specific hardware, we can execute exactly the same model, much faster.
@@ -1469,6 +1536,7 @@ Once a model is in ONNX format, we can use it with many *execution providers*. I
 
 
 ```python
+# runs in jupyter container on node-serve-model
 import os
 import time
 import numpy as np
@@ -1480,6 +1548,7 @@ from torch.utils.data import DataLoader
 ```
 
 ```python
+# runs in jupyter container on node-serve-model
 # Prepare test dataset
 food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
 val_test_transform = transforms.Compose([
@@ -1494,6 +1563,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers
 
 
 ```python
+# runs in jupyter container on node-serve-model
 def benchmark_session(ort_session):
 
     print(f"Execution provider: {ort_session.get_providers()}")
@@ -1571,6 +1641,7 @@ First, for reference, we'll repeat our performance test for the (unquantized mod
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
@@ -1591,6 +1662,45 @@ Batch Throughput: 1042.47 FPS
 #### CUDA execution provider
 
 
+Before we can use CUDA and TensorRT execution providers, we need to switch from the `jupyter-onnx-base` image to the `jupyter-onnx-gpu` image.
+
+Close this Jupyter server tab - you will reopen it shortly, with a new token.
+
+Go back to your SSH session on "node-serve-model", stop the current Jupyter server, and launch a new one with the GPU image:
+
+```bash
+# runs on node-serve-model
+docker stop jupyter
+docker run  -d --rm  -p 8888:8888 \
+    --gpus all \
+    --shm-size 16G \
+    -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
+    -v food11:/mnt/ \
+    -e FOOD11_DATA_DIR=/mnt/Food-11 \
+    --name jupyter \
+    jupyter-onnx-gpu
+```
+
+Then get a new token:
+
+```bash
+# runs on node-serve-model
+docker exec jupyter jupyter server list
+```
+
+and look for a line like
+
+```
+http://localhost:8888/?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Paste this into a browser tab, but in place of `localhost`, substitute the floating IP assigned to your instance, to open the Jupyter notebook interface that is running *on your compute instance*.
+
+Then, in the file browser on the left side, open the "work" directory and then click on the `8_ep_onnx.ipynb` notebook to continue.
+
+Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then continue with CUDA and TensorRT:
+
+
 Next, we'll try it with the CUDA execution provider, which will execute the model on the GPU:
 
 
@@ -1598,6 +1708,7 @@ Next, we'll try it with the CUDA execution provider, which will execute the mode
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
 benchmark_session(ort_session)
@@ -1625,6 +1736,7 @@ The TensorRT execution provider will optimize the model for inference on NVIDIA 
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['TensorrtExecutionProvider'])
 benchmark_session(ort_session)
@@ -1651,24 +1763,17 @@ Even just on CPU, we can still use an optimized execution provider to improve in
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
-Go back to your SSH session on "node-serve-model", and build a container image for a Jupyter server with ONNX and OpenVINO:
+Go back to your SSH session on "node-serve-model", and stop the current Jupyter server:
 
 ```bash
-# run on node-serve-model 
-docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-cpu .
-```
-
-Stop the current Jupyter server:
-
-```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker stop jupyter
 ```
 
-Then, launch a container with the new image you just built:
+Then, launch a container with the OpenVINO image:
 
 ```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
     --shm-size 16G \
     -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
@@ -1678,27 +1783,30 @@ docker run  -d --rm  -p 8888:8888 \
     jupyter-onnx-openvino
 ```
 
-To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access). We'll get this token by running `jupyter server list` inside the `jupyter` container:
+To access the Jupyter service, we will need its randomly generated secret token (which secures it from unauthorized access).
+
+Run
 
 ```bash
-# run on node-serve-model 
+# runs on node-serve-model
 docker exec jupyter jupyter server list
 ```
 
-Look for a line like
+and look for a line like
 
 ```
-http://localhost:8888/lab?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+http://localhost:8888/?token=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 Paste this into a browser tab, but in place of `localhost`, substitute the floating IP assigned to your instance, to open the Jupyter notebook interface that is running *on your compute instance*.
 
-Then, in the file browser on the left side, open the "work" directory and then click on the `7_ep_onnx.ipynb` notebook to continue.
+Then, in the file browser on the left side, open the "work" directory and then click on the `8_ep_onnx.ipynb` notebook to continue.
 
 Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then, skip to the OpenVINO section and run:
 
 
 ```python
+# runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['OpenVINOExecutionProvider'])
 benchmark_session(ort_session)
