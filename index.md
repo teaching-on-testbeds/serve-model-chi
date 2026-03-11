@@ -10,7 +10,7 @@ In this tutorial, we explore some model-level optimizations for model serving:
 
 and we will see how these affect the throughput and inference time of a model.
 
-To run this experiment, you should have already created an account on Chameleon, and become part of a project. You must also have added your SSH key to the CHI@UC and CHI@TACC sites.
+To run this experiment, you should have already created an account on Chameleon, and become part of a project. You must also have added your SSH key to the CHI@TACC site.
 
 
 
@@ -20,37 +20,34 @@ To run this experiment, you should have already created an account on Chameleon,
 
 The premise of this example is as follows: You are working as a machine learning engineer at a small startup company called GourmetGram. They are developing an online photo sharing community focused on food. You have developed a convolutional neural network in Pytorch that automatically classifies photos of food into one of a set of categories: Bread, Dairy product, Dessert, Egg, Fried food, Meat, Noodles/Pasta, Rice, Seafood, Soup, and Vegetable/Fruit.
 
-Now that you have trained a model, you are preparing to serve predictions using this model. Your manager has advised that since GourmetGram is an early-stage startup, they can't afford much compute for serving models. Your manager wants you to prepare a few different options, that they will then price out among cloud providers and decide which to use:
+Now that you have trained a model, you are preparing to serve predictions using this model. Your manager has advised that since GourmetGram is an early-stage startup, they cannot afford much compute for serving models. Your manager wants you to prepare a few different options, that they will then price out among cloud providers and decide which to use:
 
 * inference on a server-grade CPU (AMD EPYC 7763). Your manager wants to see an option that has less than 3ms median inference latency for a single input sample, and has a batch throughput of at least 1000 frames per second.
-* inference on a server-grade GPU (NVIDIA A30 or A100). Since GourmetGram won't be able to afford to load balance across several GPUs, your manager said that the GPU option must have strong enough performance to handle the workload with a single GPU node: they are looking for less than 1ms median inference latency for a single input sample, and a batch throughput of at least 5000 frames per second.
+* inference on a server-grade GPU (AMD MI100). Since GourmetGram will not be able to afford to load balance across several GPUs, your manager said that the GPU option must have strong enough performance to handle the workload with a single GPU node: they are looking for less than 1.5ms median inference latency for a single input sample, and a batch throughput of at least 2500 frames per second.
 * inference on end-user devices, as part of an app. For this option, the model itself should be less than 5MB on disk, because users are sensitive to storage space on mobile devices. Because the total prediction time will not include any network delay when the model is on the end-user device, the "budget" for inference time is larger: your manager wants less than 15ms median inference latency for a single input sample on a low-resource edge device (ARM Cortex A76 processor).
 
-You're already off to a good start, by using a MobileNetV2 as your foundation model; this is a small model that is especially designed for fast inference time. Now you need to measure the inference performance of the model and, if it doesn't meet the requirements above, investigate ways to improve it.
+You are already off to a good start, by using a MobileNetV2 as your foundation model; this is a small model that is especially designed for fast inference time. Now you need to measure the inference performance of the model and, if it does not meet the requirements above, investigate ways to improve it.
 
 
 
-## Experiment resources 
+## Experiment resources
 
-For this experiment, we will provision one bare-metal node with a recent NVIDIA GPU (e.g. A100, A30). (Although most of the experiment will run on CPU, we'll also do a little bit of GPU.)
+For this experiment, we will provision one bare-metal MI100 node at CHI@TACC.
 
-We'll use the `compute_liqid` node types at CHI@TACC, or `compute_gigaio` node types at CHI@UC. (We won't use `compute_gigaio` nodes at CHI@TACC, which have a different GPU and CPU.)
+We will use the `gpu_mi100` node type at CHI@TACC.
 
-* The `compute_liqid` nodes at CHI@TACC have one or two NVIDIA A100 40GB GPUs, and an AMD EPYC 7763 CPU.
-* The `compute_gigaio` nodes at CHI@UC have an NVIDIA A100 80GB GPU, and an AMD EPYC 7763 CPU.
-
-You can decide which type to use based on availability.
+* Most of the `gpu_mi100` nodes have two AMD MI100 GPUs and an AMD EPYC 7763 CPU.
 
 
 
-## Create a lease for a GPU server
+## Create a lease for an MI100 server
 
-To use bare metal resources on Chameleon, we must reserve them in advance. For this experiment, we will reserve a 3-hour block on a bare metal node with GPU.
+To use bare metal resources on Chameleon, we must reserve them in advance. For this experiment, we will reserve a 3-hour block on a bare metal node with an AMD MI100 GPU.
 
 We can use the OpenStack graphical user interface, Horizon, to submit a lease. To access this interface,
 
 * from the [Chameleon website](https://chameleoncloud.org/)
-* click "Experiment" > "CHI@TACC" or "Experiment" > "CHI@UC", depending on which site you want to make reservation at
+* click "Experiment" > "CHI@TACC"
 * log in if prompted to do so
 * check the project drop-down menu near the top left (which shows e.g. "CHI-XXXXXX"), and make sure the correct project is selected.
 
@@ -58,10 +55,10 @@ We can use the OpenStack graphical user interface, Horizon, to submit a lease. T
 
 Then,
 
-* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `compute_liqid` or `compute_gigaio` as applicable to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone.
+* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `gpu_mi100` to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone.
 * Once you have identified an available three-hour block in UTC time that works for you in your local time zone, make a note of:
   * the start and end time of the time you will try to reserve. (Note that if you mouse over an existing reservation, a pop up will show you the exact start and end time of that reservation.)
-  * and the name of the node you want to reserve. (We will reserve nodes by name, not by type, to avoid getting a 1-GPU node when we wanted a 2-GPU node.)
+  * and the name of the node you want to reserve.
 * Then, on the left side, click on "Reservations" > "Leases", and then click on "Create Lease":
   * set the "Name" to `serve_model_netID` where in place of `netID` you substitute your actual net ID.
   * set the start date and time in UTC. To make scheduling smoother, please start your lease on an hour boundary, e.g. `XX:00`.
@@ -71,7 +68,7 @@ Then,
   * check the "Reserve hosts" box
   * leave the "Minimum number of hosts" and "Maximum number of hosts" at 1
   * in "Resource properties", specify the node name that you identified earlier.
-* Click "Next". Then, click "Create". (We won't include any network resources in this lease.)
+* Click "Next". Then, click "Create". (We will not include any network resources in this lease.)
 
 Your lease status should show as "Pending". Click on the lease to see an overview. It will show the start time and end time, and it will show the name of the physical host that is reserved for you as part of your lease. Make sure that the lease details are correct.
 
@@ -93,14 +90,13 @@ Inside the `serve-model-chi` directory, continue with `2_create_server.ipynb`.
 
 
 
+## Launch and set up AMD MI100 server - with python-chi
 
-## Launch and set up NVIDIA A100 or A30 server - with python-chi
-
-At the beginning of the lease time for your bare metal server, we will bring up our GPU instance. We will use the `python-chi` Python API to Chameleon to provision our server. 
+At the beginning of the lease time for your bare metal server, we will bring up our GPU instance. We will use the `python-chi` Python API to Chameleon to provision our server.
 
 We will execute the cells in this notebook inside the Chameleon Jupyter environment.
 
-Run the following cell, and make sure the correct project is selected. Also **change the site to CHI@TACC or CHI@UC**, depending on where your reservation is.
+Run the following cell, and make sure the correct project is selected.
 
 
 ```python
@@ -108,7 +104,7 @@ Run the following cell, and make sure the correct project is selected. Also **ch
 from chi import server, context, lease
 import os
 
-context.version = "1.0" 
+context.version = "1.0"
 context.choose_project()
 context.choose_site(default="CHI@TACC")
 ```
@@ -119,22 +115,22 @@ Change the string in the following cell to reflect the name of *your* lease (**w
 
 ```python
 # runs in Chameleon Jupyter environment
-l = lease.get_lease(f"serve_model_netID") 
+l = lease.get_lease(f"serve_model_netID")
 l.show()
 ```
 
 
 The status should show as "ACTIVE" now that we are past the lease start time.
 
-The rest of this notebook can be executed without any interactions from you, so at this point, you can save time by clicking on this cell, then selecting "Run" > "Run Selected Cell and All Below" from the Jupyter menu.  
+The rest of this notebook can be executed without any interactions from you, so at this point, you can save time by clicking on this cell, then selecting "Run" > "Run Selected Cell and All Below" from the Jupyter menu.
 
-As the notebook executes, monitor its progress to make sure it does not get stuck on any execution error, and also to see what it is doing!
+As the notebook executes, monitor its progress to make sure it does not get stuck on any execution error, and also to see what it is doing.
 
 
 
-We will use the lease to bring up a server with the `CC-Ubuntu24.04-CUDA` disk image. 
+We will use the lease to bring up a server with the `CC-Ubuntu24.04-ROCm` disk image. (The default Ubuntu 24.04 kernel is not compatible with AMD GPUs on these nodes.)
 
-> **Note**: the following cell brings up a server only if you don't already have one with the same name! (Regardless of its error state.) If you have a server in ERROR state already, delete it first in the Horizon GUI before you run this cell.
+> **Note**: the following cell brings up a server only if you do not already have one with the same name! (Regardless of its error state.) If you have a server in ERROR state already, delete it first in the Horizon GUI before you run this cell.
 
 
 
@@ -142,9 +138,9 @@ We will use the lease to bring up a server with the `CC-Ubuntu24.04-CUDA` disk i
 # runs in Chameleon Jupyter environment
 username = os.getenv('USER') # all exp resources will have this prefix
 s = server.Server(
-    f"node-serve-model-{username}", 
+    f"node-serve-model-{username}",
     reservation_id=l.node_reservations[0]["id"],
-    image_name="CC-Ubuntu24.04-CUDA"
+    image_name="CC-Ubuntu24.04-ROCm"
 )
 s.submit(idempotent=True)
 ```
@@ -154,7 +150,7 @@ Note: security groups are not used at Chameleon bare metal sites, so we do not h
 
 
 
-Then, we'll associate a floating IP with the instance, so that we can access it over SSH.
+Then, we will associate a floating IP with the instance, so that we can access it over SSH.
 
 
 ```python
@@ -180,16 +176,14 @@ s.show(type="widget")
 
 
 
-
-
 ### Retrieve code and notebooks on the instance
 
-Now, we can use `python-chi` to execute commands on the instance, to set it up. We'll start by retrieving the code and other materials on the instance.
+Now, we can use `python-chi` to execute commands on the instance, to set it up. We will start by retrieving the code and other materials on the instance.
 
 
 ```python
 # runs in Chameleon Jupyter environment
-s.execute("git clone https://github.com/teaching-on-testbeds/serve-model-chi")
+s.execute("git clone --branch mi100 --single-branch https://github.com/teaching-on-testbeds/serve-model-chi")
 ```
 
 
@@ -206,31 +200,25 @@ s.execute("sudo groupadd -f docker; sudo usermod -aG docker $USER")
 ```
 
 
-### Set up the NVIDIA container toolkit
+### Check the AMD GPU setup
 
-
-We will also install the NVIDIA container toolkit, with which we can access GPUs from inside our containers.
+Run
 
 
 ```python
 # runs in Chameleon Jupyter environment
-s.execute("curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
-s.execute("sudo apt update")
-s.execute("sudo apt-get install -y nvidia-container-toolkit")
-s.execute("sudo nvidia-ctk runtime configure --runtime=docker")
-# for https://github.com/NVIDIA/nvidia-container-toolkit/issues/48
-s.execute("sudo jq 'if has(\"exec-opts\") then . else . + {\"exec-opts\": [\"native.cgroupdriver=cgroupfs\"]} end' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp > /dev/null && sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json")
-s.execute("sudo systemctl restart docker")
+s.execute("rocm-smi")
 ```
+
+
+and verify that you can see the GPU.
+
 
 
 
 ## Open an SSH session
 
-Finally, open an SSH sesson on your server. From your local terminal, run
+Finally, open an SSH session on your server. From your local terminal, run
 
 ```
 ssh -i ~/.ssh/id_rsa_chameleon cc@A.B.C.D
@@ -1513,7 +1501,7 @@ Also download the models from inside the `models` directory.
 
 ### Try a different execution provider
 
-Once a model is in ONNX format, we can use it with many *execution providers*. In ONNX, an execution provider an interface that lets ONNX models run with special hardware-specific capabilities. Until now, we have been using the `CPUExecutionProvider`, but if we use hardware-specific capabilities, e.g. switch out generic implementations of graph operations for implementations that are optimized for specific hardware, we can execute exactly the same model, much faster.
+Once a model is in ONNX format, we can use many *execution providers*. In ONNX, an execution provider an interface that lets ONNX models run with special hardware-specific capabilities. Until now, we have been using the `CPUExecutionProvider`, but if we use hardware-specific capabilities, e.g. switch out generic implementations of graph operations for implementations that are optimized for specific hardware, we can execute exactly the same model, much faster.
 
 
 
@@ -1567,14 +1555,11 @@ def benchmark_session(ort_session):
 
     ## Benchmark inference latency for single sample
 
-    num_trials = 100  # Number of trials
+    num_trials = 100
 
-    # Get a single sample from the test data
-
-    single_sample, _ = next(iter(test_loader))  
+    single_sample, _ = next(iter(test_loader))
     single_sample = single_sample[:1].numpy()
 
-    # Warm-up run
     ort_session.run(None, {ort_session.get_inputs()[0].name: single_sample})
 
     latencies = []
@@ -1590,13 +1575,11 @@ def benchmark_session(ort_session):
 
     ## Benchmark batch throughput
 
-    num_batches = 50  # Number of trials
+    num_batches = 50
 
-    # Get a batch from the test data
-    batch_input, _ = next(iter(test_loader))  
+    batch_input, _ = next(iter(test_loader))
     batch_input = batch_input.numpy()
 
-    # Warm-up run
     ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
 
     batch_times = []
@@ -1605,7 +1588,7 @@ def benchmark_session(ort_session):
         ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
         batch_times.append(time.time() - start_time)
 
-    batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
+    batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times)
     print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 ```
@@ -1614,13 +1597,9 @@ def benchmark_session(ort_session):
 
 
 
-
 #### CPU execution provider
 
-First, for reference, we'll repeat our performance test for the (unquantized model with) `CPUExecutionProvider`:
-
-
-
+First, for reference, we will repeat our performance test for the (unquantized model with) `CPUExecutionProvider`:
 
 
 ```python
@@ -1630,22 +1609,11 @@ ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProv
 benchmark_session(ort_session)
 ```
 
-<!--
-Execution provider: ['CPUExecutionProvider']
-Accuracy: 90.59% (3032/3347 correct)
-Inference Latency (single sample, median): 9.93 ms
-Inference Latency (single sample, 95th percentile): 14.20 ms
-Inference Latency (single sample, 99th percentile): 14.43 ms
-Inference Throughput (single sample): 91.10 FPS
-Batch Throughput: 1042.47 FPS
--->
 
 
+#### ROCm execution provider
 
-#### CUDA execution provider
-
-
-Before we can use CUDA and TensorRT execution providers, we need to switch from the `jupyter-onnx-base` image to the `jupyter-onnx-gpu` image.
+Before we can use the ROCm execution provider, we need to switch from the `jupyter-onnx-base` image to the AMD GPU image, `jupyter-onnx-gpu`.
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
@@ -1656,19 +1624,20 @@ Go back to your SSH session on "node-serve-model", and stop the current Jupyter 
 docker stop jupyter
 ```
 
-Build the GPU image:
+Build the ROCm image:
 
 ```bash
 # runs on node-serve-model
-docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-nvidia .
+docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-amd .
 ```
 
-Then launch a new one with the GPU image:
+Then launch a new one with the AMD GPU image:
 
 ```bash
 # runs on node-serve-model
 docker run  -d --rm  -p 8888:8888 \
-    --gpus all \
+    --device=/dev/kfd --device=/dev/dri \
+    --group-add video --group-add $(getent group | grep render | cut -d':' -f 3) \
     --shm-size 16G \
     -v ~/serve-model-chi/workspace:/home/jovyan/work/ \
     -v food11:/mnt/ \
@@ -1694,67 +1663,22 @@ Paste this into a browser tab, but in place of `localhost`, substitute the float
 
 Then, in the file browser on the left side, open the "work" directory and then click on the `8_ep_onnx.ipynb` notebook to continue.
 
-Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then continue with CUDA and TensorRT:
-
-
-Next, we'll try it with the CUDA execution provider, which will execute the model on the GPU:
-
-
-
+Run the three cells at the top, which `import` libraries, set up the data loaders, and define the `benchmark_session` function. Then continue with ROCm:
 
 
 ```python
 # runs in jupyter container on node-serve-model
 onnx_model_path = "models/food11.onnx"
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
+ort_session = ort.InferenceSession(onnx_model_path, providers=['ROCMExecutionProvider'])
 benchmark_session(ort_session)
 ort.get_device()
 ```
-
-<!--
-Execution provider: ['CUDAExecutionProvider', 'CPUExecutionProvider']
-Accuracy: 90.59% (3032/3347 correct)
-Inference Latency (single sample, median): 0.89 ms
-Inference Latency (single sample, 95th percentile): 0.90 ms
-Inference Latency (single sample, 99th percentile): 0.91 ms
-Inference Throughput (single sample): 1117.06 FPS
-Batch Throughput: 5181.99 FPS
--->
-
-
-
-#### TensorRT execution provider
-
-
-The TensorRT execution provider will optimize the model for inference on NVIDIA GPUs. It will take a long time to run this cell, because it spends a lot of time optimizing the model (finding the best subgraphs, etc.) - but once the model is loaded, its inference time will be much faster than any of our previous tests.
-
-
-
-
-```python
-# runs in jupyter container on node-serve-model
-onnx_model_path = "models/food11.onnx"
-ort_session = ort.InferenceSession(onnx_model_path, providers=['TensorrtExecutionProvider'])
-benchmark_session(ort_session)
-ort.get_device()
-```
-
-<!--
-Execution provider: ['TensorrtExecutionProvider', 'CPUExecutionProvider']
-Accuracy: 90.59% (3032/3347 correct)
-Inference Latency (single sample, median): 0.63 ms
-Inference Latency (single sample, 95th percentile): 0.64 ms
-Inference Latency (single sample, 99th percentile): 0.70 ms
-Inference Throughput (single sample): 1572.61 FPS
-Batch Throughput: 9274.45 FPS
--->
-
 
 
 
 #### OpenVINO execution provider
 
-Even just on CPU, we can still use an optimized execution provider to improve inference performance. We will try out the Intel [OpenVINO](https://github.com/openvinotoolkit/openvino) execution provider. However, ONNX runtime can be built to support CUDA/TensorRT or OpenVINO, but not both at the same time, so we will need to bring up a new container.
+Even just on CPU, we can still use an optimized execution provider to improve inference performance. We will try out the Intel [OpenVINO](https://github.com/openvinotoolkit/openvino) execution provider. However, ONNX runtime can be built to support ROCm or OpenVINO, but not both at the same time, so we will need to bring up a new container.
 
 Close this Jupyter server tab - you will reopen it shortly, with a new token.
 
@@ -1814,31 +1738,6 @@ ort_session = ort.InferenceSession(onnx_model_path, providers=['OpenVINOExecutio
 benchmark_session(ort_session)
 ort.get_device()
 ```
-
-
-<!--
-
-On AMD EPYC
-
-Execution provider: ['OpenVINOExecutionProvider', 'CPUExecutionProvider']
-Accuracy: 90.59% (3032/3347 correct)
-Inference Latency (single sample, median): 1.39 ms
-Inference Latency (single sample, 95th percentile): 1.89 ms
-Inference Latency (single sample, 99th percentile): 1.92 ms
-Inference Throughput (single sample): 646.63 FPS
-Batch Throughput: 1624.30 FPS
-
-On Intel
-
-Execution provider: ['OpenVINOExecutionProvider', 'CPUExecutionProvider']
-Accuracy: 90.59% (3032/3347 correct)
-Inference Latency (single sample, median): 1.55 ms
-Inference Latency (single sample, 95th percentile): 1.76 ms
-Inference Latency (single sample, 99th percentile): 1.81 ms
-Inference Throughput (single sample): 663.72 FPS
-Batch Throughput: 2453.48 FPS
-
--->
 
 
 When you are done, download the fully executed notebook from the Jupyter container environment for later reference. (Note: because it is an executable file, and you are downloading it from a site that is not secured with HTTPS, you may have to explicitly confirm the download in some browsers.)
