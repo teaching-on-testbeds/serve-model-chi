@@ -1,4 +1,4 @@
-PROFILE ?= nvidia
+PROFILE ?= amd
 
 INDEX_OUT := index.md
 INDEX_NVIDIA_OUT := index_nvidia.md
