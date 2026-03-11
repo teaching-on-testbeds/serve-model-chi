@@ -23,7 +23,7 @@ The premise of this example is as follows: You are working as a machine learning
 Now that you have trained a model, you are preparing to serve predictions using this model. Your manager has advised that since GourmetGram is an early-stage startup, they can't afford much compute for serving models. Your manager wants you to prepare a few different options, that they will then price out among cloud providers and decide which to use:
 
 * inference on a server-grade CPU (AMD EPYC 7763). Your manager wants to see an option that has less than 3ms median inference latency for a single input sample, and has a batch throughput of at least 1000 frames per second.
-* inference on a server-grade GPU (A100). Since GourmetGram won't be able to afford to load balance across several GPUs, your manager said that the GPU option must have strong enough performance to handle the workload with a single GPU node: they are looking for less than 1ms median inference latency for a single input sample, and a batch throughput of at least 5000 frames per second.
+* inference on a server-grade GPU (NVIDIA A30 or A100). Since GourmetGram won't be able to afford to load balance across several GPUs, your manager said that the GPU option must have strong enough performance to handle the workload with a single GPU node: they are looking for less than 1ms median inference latency for a single input sample, and a batch throughput of at least 5000 frames per second.
 * inference on end-user devices, as part of an app. For this option, the model itself should be less than 5MB on disk, because users are sensitive to storage space on mobile devices. Because the total prediction time will not include any network delay when the model is on the end-user device, the "budget" for inference time is larger: your manager wants less than 15ms median inference latency for a single input sample on a low-resource edge device (ARM Cortex A76 processor).
 
 You're already off to a good start, by using a MobileNetV2 as your foundation model; this is a small model that is especially designed for fast inference time. Now you need to measure the inference performance of the model and, if it doesn't meet the requirements above, investigate ways to improve it.
@@ -228,28 +228,6 @@ s.execute("sudo systemctl restart docker")
 
 
 
-### Build Jupyter images for the lab
-
-To save time later in the lab, we will start building all three Jupyter images now. We begin with a generic ONNX image (`jupyter-onnx-base`) that does not include GPU-specific runtime libraries or the OpenVINO execution provider, so it typically builds faster. We can use that image to get started right away.
-
-
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .")
-```
-
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-gpu .")
-```
-
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .")
-```
-
-
-
 ## Open an SSH session
 
 Finally, open an SSH sesson on your server. From your local terminal, run
@@ -309,7 +287,14 @@ it should show "evaluation", "validation", and "training" subfolders.
 
 ## Launch a Jupyter container
 
-Inside the SSH session, launch a container from the `jupyter-onnx-base` image:
+Inside the SSH session, build the `jupyter-onnx-base` image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .
+```
+
+Then, launch a container from the `jupyter-onnx-base` image:
 
 ```bash
 # runs on node-serve-model
@@ -1671,7 +1656,14 @@ Go back to your SSH session on "node-serve-model", and stop the current Jupyter 
 docker stop jupyter
 ```
 
-and launch a new one with the GPU image:
+Build the GPU image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-nvidia .
+```
+
+Then launch a new one with the GPU image:
 
 ```bash
 # runs on node-serve-model
@@ -1760,7 +1752,6 @@ Batch Throughput: 9274.45 FPS
 
 
 
-
 #### OpenVINO execution provider
 
 Even just on CPU, we can still use an optimized execution provider to improve inference performance. We will try out the Intel [OpenVINO](https://github.com/openvinotoolkit/openvino) execution provider. However, ONNX runtime can be built to support CUDA/TensorRT or OpenVINO, but not both at the same time, so we will need to bring up a new container.
@@ -1772,6 +1763,13 @@ Go back to your SSH session on "node-serve-model", and stop the current Jupyter 
 ```bash
 # runs on node-serve-model
 docker stop jupyter
+```
+
+Build the OpenVINO image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .
 ```
 
 Then, launch a container with the OpenVINO image:
