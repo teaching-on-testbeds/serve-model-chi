@@ -4,7 +4,14 @@
 
 ## Launch a Jupyter container
 
-Inside the SSH session, launch a container from the `jupyter-onnx-base` image:
+Inside the SSH session, build the `jupyter-onnx-base` image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .
+```
+
+Then, launch a container from the `jupyter-onnx-base` image:
 
 ```bash
 # runs on node-serve-model

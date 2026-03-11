@@ -175,36 +175,6 @@ s.execute("sudo systemctl restart docker")
 
 ::: {.cell .markdown}
 
-### Build Jupyter images for the lab
-
-To save time later in the lab, we will start building all three Jupyter images now. We begin with a generic ONNX image (`jupyter-onnx-base`) that does not include GPU-specific runtime libraries or the OpenVINO execution provider, so it typically builds faster. We can use that image to get started right away.
-
-:::
-
-::: {.cell .code}
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-base -f serve-model-chi/docker/Dockerfile.jupyter-onnx-base .")
-```
-:::
-
-::: {.cell .code}
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-gpu .")
-```
-:::
-
-::: {.cell .code}
-```python
-# runs in Chameleon Jupyter environment
-s.execute("docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .")
-```
-:::
-
-
-::: {.cell .markdown}
-
 ## Open an SSH session
 
 Finally, open an SSH sesson on your server. From your local terminal, run

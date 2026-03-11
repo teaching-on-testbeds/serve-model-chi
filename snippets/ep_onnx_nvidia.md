@@ -159,7 +159,14 @@ Go back to your SSH session on "node-serve-model", and stop the current Jupyter 
 docker stop jupyter
 ```
 
-and launch a new one with the GPU image:
+Build the GPU image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-gpu -f serve-model-chi/docker/Dockerfile.jupyter-onnx-nvidia .
+```
+
+Then launch a new one with the GPU image:
 
 ```bash
 # runs on node-serve-model
@@ -253,7 +260,6 @@ Batch Throughput: 9274.45 FPS
 -->
 
 
-
 ::: {.cell .markdown} 
 
 
@@ -268,6 +274,13 @@ Go back to your SSH session on "node-serve-model", and stop the current Jupyter 
 ```bash
 # runs on node-serve-model
 docker stop jupyter
+```
+
+Build the OpenVINO image:
+
+```bash
+# runs on node-serve-model
+docker build -t jupyter-onnx-openvino -f serve-model-chi/docker/Dockerfile.jupyter-onnx-openvino .
 ```
 
 Then, launch a container with the OpenVINO image:

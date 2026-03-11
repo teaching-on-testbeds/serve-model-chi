@@ -8,7 +8,7 @@ To use bare metal resources on Chameleon, we must reserve them in advance. For t
 We can use the OpenStack graphical user interface, Horizon, to submit a lease. To access this interface,
 
 * from the [Chameleon website](https://chameleoncloud.org/)
-* click "Experiment" > "CHI@TACC"
+* click "Experiment" > "CHI@TACC" or "Experiment" > "CHI@UC", depending on which site you want to make reservation at
 * log in if prompted to do so
 * check the project drop-down menu near the top left (which shows e.g. "CHI-XXXXXX"), and make sure the correct project is selected.
 
@@ -18,10 +18,10 @@ We can use the OpenStack graphical user interface, Horizon, to submit a lease. T
 
 Then,
 
-* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `compute_gigaio` to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone.
+* On the left side, click on "Reservations" > "Leases", and then click on "Host Calendar". In the "Node type" drop down menu, change the type to `compute_liqid` or `compute_gigaio` as applicable to see the schedule of availability. You may change the date range setting to "30 days" to see a longer time scale. Note that the dates and times in this display are in UTC. You can use [WolframAlpha](https://www.wolframalpha.com/) or equivalent to convert to your local time zone.
 * Once you have identified an available three-hour block in UTC time that works for you in your local time zone, make a note of:
   * the start and end time of the time you will try to reserve. (Note that if you mouse over an existing reservation, a pop up will show you the exact start and end time of that reservation.)
-  * and the name of the node you want to reserve. (We will reserve nodes by name, not by type, to avoid getting a different hardware profile than expected.)
+  * and the name of the node you want to reserve. (We will reserve nodes by name, not by type, to avoid getting a 1-GPU node when we wanted a 2-GPU node.)
 * Then, on the left side, click on "Reservations" > "Leases", and then click on "Create Lease":
   * set the "Name" to `serve_model_netID` where in place of `netID` you substitute your actual net ID.
   * set the start date and time in UTC. To make scheduling smoother, please start your lease on an hour boundary, e.g. `XX:00`.
